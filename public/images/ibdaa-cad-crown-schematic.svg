@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" fill="none">
+  <defs>
+    <linearGradient id="navy" x1="74" y1="52" x2="934" y2="974" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#234269"/>
+      <stop offset=".52" stop-color="#1E3A5F"/>
+      <stop offset="1" stop-color="#173250"/>
+    </linearGradient>
+    <radialGradient id="focus" cx="0" cy="0" r="1" gradientTransform="translate(500 503) rotate(90) scale(415 440)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#78B9D3" stop-opacity=".11"/>
+      <stop offset="1" stop-color="#78B9D3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shell" x1="338" y1="344" x2="665" y2="707" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BDE5F4" stop-opacity=".17"/>
+      <stop offset=".55" stop-color="#8EC5E5" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#24A1A5" stop-opacity=".04"/>
+    </linearGradient>
+    <linearGradient id="outline" x1="324" y1="397" x2="691" y2="628" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#91CBE8"/>
+      <stop offset=".5" stop-color="#CEEAF5"/>
+      <stop offset="1" stop-color="#89C6E3"/>
+    </linearGradient>
+    <pattern id="panelGrid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M72 0H0V72" stroke="#A9D7E8" stroke-opacity=".1"/>
+    </pattern>
+    <clipPath id="panelClip">
+      <path d="M215 265h570v490H215z"/>
+    </clipPath>
+  </defs>
+
+  <path fill="url(#navy)" d="M0 0h1000v1000H0z"/>
+  <path fill="url(#focus)" d="M0 0h1000v1000H0z"/>
+
+  <!-- Sparse drafting guides leave a quiet margin around the central study. -->
+  <g stroke="#ADD5E7" stroke-width="1" stroke-opacity=".2">
+    <path d="M110 180h780M110 820h780M130 120v760M870 120v760"/>
+    <path d="M130 180 215 265M870 180l-85 85M130 820l85-65M870 820l-85-65" stroke-opacity=".5"/>
+  </g>
+  <g stroke="#9AD0E8" stroke-width="2" stroke-linecap="square" stroke-opacity=".84">
+    <path d="M100 180h34m-4-65v65M866 180h34m-30-65v65M100 820h34m-4 0v65M866 820h34m-30 0v65"/>
+  </g>
+
+  <!-- A single measured field contains the restoration drawing. -->
+  <path d="M215 265h570v490H215z" fill="#0E2948" fill-opacity=".08" stroke="#9BCFE5" stroke-opacity=".7" stroke-width="2.5"/>
+  <g clip-path="url(#panelClip)">
+    <path d="M215 265h570v490H215z" fill="url(#panelGrid)"/>
+    <path d="M500 265v490M215 510h570" stroke="#B5DCEC" stroke-opacity=".13"/>
+  </g>
+
+  <!-- Crown contour and a small number of CAD construction lines. -->
+  <path d="M326 418c-1-42 19-74 53-83 27-8 54 2 74 20 10-32 32-54 59-56 28-1 51 20 61 55 20-18 45-25 69-18 34 10 55 43 51 85l-17 184c-5 57-36 91-85 102-56 13-121 13-178 0-50-12-80-47-85-102l-2-187Z" fill="url(#shell)" stroke="url(#outline)" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M326 418c47 29 88 23 127-27 24 24 45 39 64 41 22-1 40-16 56-44 41 44 80 54 120 33" stroke="#B8E2F1" stroke-opacity=".77" stroke-width="2.2" stroke-linecap="round"/>
+  <g stroke="#8BC7E2" stroke-width="1.5" stroke-linecap="round" stroke-opacity=".52">
+    <path d="M379 335c3 37 29 56 74 56m59-92c-25 48-29 95 5 133m56-78c-31 24-46 49-56 78m125-96c-9 43-31 56-69 52"/>
+    <path d="M347 555c90 38 211 39 325 0" stroke-opacity=".38"/>
+  </g>
+  <g stroke="#31AFB2" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-opacity=".84">
+    <path d="M453 391 517 540 573 388"/>
+    <path d="M453 391 409 684m164-296 34 296M409 684l108-144 90 144" stroke-opacity=".54"/>
+  </g>
+  <path d="M390 690c67 24 155 24 222 0" stroke="#C0E6F2" stroke-opacity=".46" stroke-width="1.4" stroke-linecap="round"/>
+  <g fill="#60CBD0">
+    <circle cx="453" cy="391" r="3"/><circle cx="573" cy="388" r="3"/>
+    <circle cx="517" cy="540" r="3"/>
+  </g>
+
+  <!-- One baseline and four registration ticks finish the technical composition. -->
+  <path d="M350 790h300" stroke="#24A1A5" stroke-width="3" stroke-linecap="round"/>
+  <g stroke="#9BCFE5" stroke-opacity=".48" stroke-width="1.5">
+    <path d="M200 510h15m570 0h15M500 250v15m0 490v15"/>
+  </g>
+</svg>

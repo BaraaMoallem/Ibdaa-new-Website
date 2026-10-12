@@ -52,7 +52,7 @@ export function structuredData(locale: Locale, page: PageKey) {
       areaServed: [{ "@type": "Place", name: "Cairo" }, { "@type": "Place", name: "Assiut" }],
       location: { "@type": "Place", name: "Nasr City, Cairo" },
       telephone: business.phone.map((phone) => phone.display), email: business.email,
-      sameAs: [business.facebook],
+      sameAs: [business.facebook, business.instagram],
       contactPoint: business.phone.map((phone) => ({ "@type": "ContactPoint", telephone: phone.display, contactType: "customer service" })),
     },
     {

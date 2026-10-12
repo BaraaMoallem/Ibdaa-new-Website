@@ -40,7 +40,7 @@ export function SiteShell({ locale, page, children }: { locale: Locale; page: Pa
         <div className="footer-intro"><Brand locale={locale} inverse /><p>{ui.audience}<br />{ui.location}</p></div>
         <div className="footer-group"><h2>{locale === "ar" ? "تصفح" : "Explore"}</h2>{nav[locale].map(item => <Link key={item.key} href={routes[locale][item.key]}>{item.label}</Link>)}</div>
         <div className="footer-group"><h2>{ui.contact}</h2><a href={business.phone[0].href} dir="ltr">{business.phone[0].display}</a><a href={business.phone[1].href} dir="ltr">{business.phone[1].display}</a><a href={`mailto:${business.email}`}>{business.email}</a></div>
-        <div className="footer-group"><h2>{locale === "ar" ? "تابعنا واعثر علينا" : "Find us"}</h2><a href={business.maps} target="_blank" rel="noopener noreferrer">{ui.map} ↗</a><a href={business.facebook} target="_blank" rel="noopener noreferrer">{ui.facebook} ↗</a></div>
+        <div className="footer-group"><h2>{locale === "ar" ? "تابعنا واعثر علينا" : "Find us"}</h2><a href={business.maps} target="_blank" rel="noopener noreferrer">{ui.map} ↗</a><a href={business.facebook} target="_blank" rel="noopener noreferrer">{ui.facebook} ↗</a><a href={business.instagram} target="_blank" rel="noopener noreferrer">{ui.instagram} ↗</a></div>
       </div>
       <div className="container footer-bottom"><span>© {new Date().getFullYear()} IBDAA Dental Lab</span><span>{ui.location}</span></div>
     </footer>

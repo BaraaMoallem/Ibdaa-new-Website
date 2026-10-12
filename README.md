@@ -25,4 +25,11 @@ Import this repository into Vercel as a Next.js project. Set `NEXT_PUBLIC_SITE_U
 
 ## Replacing visual placeholders
 
-The founder/about placeholder uses `PhotoPlaceholder` in `src/components/Shared.tsx`. Replace its use in `src/components/Pages.tsx` with a real optimized lab or founder image and descriptive alt text. The restoration cards and rows use CSS artwork as deliberate placeholders; replace those with verified restoration or CAD/CAM photographs when available. Source logo assets remain intact under `assets/logo/`; `public/logo-ball.png` is a copy used by the website.
+The local image files are in `public/images/placeholders/`. Paths are centralized in `src/lib/site.ts` under `media`; localized alt text is alongside the English and Arabic content. The reusable `ImageArea` component in `src/components/Shared.tsx` uses Next.js Image and stable aspect ratios. Replace the paths with verified IBDAA photography, then update the alt text to describe the real images.
+
+- `zirconia-placeholder.svg`, `zircomax-placeholder.svg`, `emax-placeholder.svg`, `veneers-placeholder.svg`, `pfm-placeholder.svg`: restoration case photographs.
+- `lab-placeholder.svg`: a real laboratory/workspace photograph for the about page. The homepage hero uses the supplied image optimized as `public/images/ibdaa-hero-precision-implant-blue-glove.webp`.
+- `cadcam-placeholder.svg`: the CAD/CAM workflow or relevant lab equipment.
+- `founder-placeholder.svg`: a real portrait of DT Yasser Zaineh.
+
+The supplied `assets/logo/brand guide.png` and `branding guide.png` are identical. `public/logo-ball.png` and `src/app/icon.png` use the matching standalone symbol; the old full-wordmark and `assets/logo/OLD/` files remain untouched and are not used on the site.

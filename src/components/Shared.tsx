@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { content, routes, whatsappUrl, type Locale } from "@/lib/site";
 
 export function SectionHeading({ eyebrow, title, intro, align = "left" }: { eyebrow: string; title: string; intro?: string; align?: "left" | "center" }) {
@@ -9,10 +10,9 @@ export function PageHero({ eyebrow, title, lead, section }: { eyebrow: string; t
   return <section className="page-hero"><div className="container page-hero-inner"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="lead">{lead}</p></div><div className="page-hero-index" aria-hidden="true"><span>{section}</span><i /></div></div></section>;
 }
 
-export function PhotoPlaceholder({ label, className = "" }: { label: string; className?: string }) {
-  return <div className={`photo-placeholder ${className}`} role="img" aria-label={label}>
-    <div className="placeholder-orbit" aria-hidden="true"><span/><span/><span/></div>
-    <p>{label}</p>
+export function ImageArea({ src, alt, className = "", sizes, priority = false }: { src: string; alt: string; className?: string; sizes: string; priority?: boolean }) {
+  return <div className={`image-area ${className}`}>
+    <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="image-area-img" />
   </div>;
 }
 

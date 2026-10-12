@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900" fill="none">
+  <defs>
+    <linearGradient id="ground" x1="72" y1="80" x2="820" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102A47"/>
+      <stop offset=".53" stop-color="#1E3A5F"/>
+      <stop offset="1" stop-color="#153B57"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(476 425) rotate(90) scale(438 425)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3C85A3" stop-opacity=".4"/>
+      <stop offset="1" stop-color="#1E3A5F" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ceramic" x1="312" y1="211" x2="629" y2="698" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset=".2" stop-color="#ECF8FC"/>
+      <stop offset=".5" stop-color="#A8D2E5"/>
+      <stop offset=".72" stop-color="#5E9ABA"/>
+      <stop offset="1" stop-color="#27678A"/>
+    </linearGradient>
+    <linearGradient id="ceramicEdge" x1="392" y1="286" x2="687" y2="616" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BFE4F1"/>
+      <stop offset=".46" stop-color="#4E8EAD"/>
+      <stop offset="1" stop-color="#173F62"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="266" y1="277" x2="559" y2="551" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity=".84"/>
+      <stop offset=".45" stop-color="white" stop-opacity=".19"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="tealLine" x1="170" y1="589" x2="708" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24A1A5" stop-opacity="0"/>
+      <stop offset=".48" stop-color="#5DD5D0"/>
+      <stop offset="1" stop-color="#8EC5E5" stop-opacity=".12"/>
+    </linearGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" stroke="#B9D9E7" stroke-opacity=".08"/>
+    </pattern>
+    <filter id="shadow" x="193" y="180" width="576" height="586" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="34"/>
+    </filter>
+  </defs>
+
+  <path fill="url(#ground)" d="M0 0h900v900H0z"/>
+  <path fill="url(#grid)" d="M0 0h900v900H0z"/>
+  <path fill="url(#glow)" d="M0 0h900v900H0z"/>
+
+  <!-- Quiet drafting marks make the sculptural form feel digitally constructed. -->
+  <g stroke="#B5D8E5" stroke-opacity=".2" stroke-width="1">
+    <path d="M84 146h122M84 146v122M816 146H694M816 146v122M84 754h122M84 754V632M816 754H694M816 754V632"/>
+    <path d="M450 91v718M91 450h718" stroke-dasharray="3 9" stroke-opacity=".12"/>
+    <circle cx="450" cy="450" r="307" stroke-dasharray="3 9"/>
+    <circle cx="450" cy="450" r="260" stroke-opacity=".12"/>
+  </g>
+  <g fill="#8EC5E5" fill-opacity=".72">
+    <circle cx="450" cy="143" r="3"/><circle cx="757" cy="450" r="3"/>
+    <circle cx="450" cy="757" r="3"/><circle cx="143" cy="450" r="3"/>
+  </g>
+
+  <!-- A translucent offset form suggests the digital model behind the final restoration. -->
+  <path d="M290 281c-9-54 11-104 48-133 42-33 82-26 117-8 32 17 48 17 78 2 50-25 102-19 140 18 45 44 55 96 43 151l-44 259c-13 78-73 138-158 159-44 11-88 9-128-4-83-26-132-88-140-171l-24-273Z" stroke="#63BBC7" stroke-opacity=".23" stroke-width="2" stroke-dasharray="5 10"/>
+  <path d="M249 256c-7-38 7-73 35-94 31-24 67-21 101-6 30 14 52 15 80 1 45-21 83-19 115 9 35 31 46 68 38 108l-41 228c-10 55-51 100-106 116-37 11-79 11-115-2-57-21-90-63-96-120l-11-240Z" stroke="url(#tealLine)" stroke-width="2"/>
+
+  <ellipse cx="475" cy="719" rx="197" ry="33" fill="#071D33" fill-opacity=".46" filter="url(#shadow)"/>
+
+  <!-- Layered ceramic restoration: side depth, glazed face and fine contour lines. -->
+  <path d="M307 288c-10-48 5-91 41-115 34-23 72-21 104-6 29 14 45 15 75 1 44-21 87-17 117 15 35 38 43 76 35 120l-42 263c-12 73-66 127-143 144-36 8-76 6-110-6-68-24-107-76-115-150l-19-266Z" fill="url(#ceramicEdge)" stroke="#C6E9F2" stroke-opacity=".66" stroke-width="2"/>
+  <path d="M273 272c-8-47 7-85 41-108 33-22 70-20 101-5 30 15 49 15 77 1 43-22 87-16 117 15 34 36 41 75 34 117l-39 257c-11 69-64 121-136 137-36 8-75 6-107-6-67-24-105-73-112-142l-18-266Z" fill="url(#ceramic)" stroke="#F3FCFD" stroke-width="2"/>
+  <path d="M290 273c-5-38 7-70 33-89 28-20 56-19 86-6 37 17 66 17 99 1 36-17 67-13 91 13 28 29 34 61 27 102l-35 245c-10 63-57 108-124 125-33 8-68 6-99-5-59-21-93-66-100-130l-17-256Z" fill="url(#sheen)"/>
+  <path d="M271 294c35 8 72 29 101 62 23 26 35 66 41 115 7 55 19 112 54 192" stroke="white" stroke-opacity=".38" stroke-width="4" stroke-linecap="round"/>
+  <path d="M438 194c-14 44-22 91-15 136m25-138c-4 36-6 76-3 112m150-89c-29 13-60 42-78 79-25 51-30 115-31 162" stroke="white" stroke-opacity=".31" stroke-width="2" stroke-linecap="round"/>
+  <path d="M280 493c37 75 97 124 168 127 79 4 142-34 177-100" stroke="#DDF5F8" stroke-opacity=".31" stroke-width="2"/>
+  <path d="M258 552c56 89 119 130 205 130 89 0 146-46 179-125" stroke="#123C5D" stroke-opacity=".32" stroke-width="2"/>
+
+  <!-- Thin scan arcs and measured points sit around the object, not over the content. -->
+  <path d="M161 532c30 168 146 276 296 297M741 330c-29-120-112-200-220-238" stroke="url(#tealLine)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M146 529l30-7m562-199 29-9M445 827v-30" stroke="#5CC9CD" stroke-opacity=".85" stroke-width="2"/>
+  <g stroke="#8EC5E5" stroke-opacity=".75" stroke-width="1.5">
+    <circle cx="229" cy="281" r="8"/><path d="M229 265v-13m0 45v13m-24-29h-13m61 0h13"/>
+    <circle cx="658" cy="607" r="8"/><path d="M658 591v-13m0 45v13m-24-29h-13m61 0h13"/>
+  </g>
+  <g fill="#78D0D4">
+    <circle cx="271" cy="294" r="4"/><circle cx="413" cy="471" r="4"/>
+    <circle cx="467" cy="663" r="4"/><circle cx="625" cy="520" r="4"/>
+  </g>
+  <g stroke="#BDE8EE" stroke-opacity=".4" stroke-width="1">
+    <path d="M413 471 200 456H130m337 207 82 83h166m-90-226 98-93h82"/>
+  </g>
+  <path d="M113 456h26m548 290h26m75-319h21" stroke="#BDE8EE" stroke-opacity=".7" stroke-width="3"/>
+  <path d="M0 841h900" stroke="#91C7D7" stroke-opacity=".19"/>
+</svg>
