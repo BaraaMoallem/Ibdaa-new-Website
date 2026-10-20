@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Brand } from "./Brand";
-import { business, content, nav, routes, whatsappUrl, type Locale, type PageKey } from "@/lib/site";
+import { business, content, nav, routes, type Locale, type PageKey } from "@/lib/site";
 
 function LanguageSwitch({ locale, page }: { locale: Locale; page: PageKey }) {
   return <div className="language-switch" aria-label={content[locale].ui.switchLanguage}>
@@ -22,14 +22,14 @@ export function SiteShell({ locale, page, children }: { locale: Locale; page: Pa
         </nav>
         <div className="header-actions">
           <LanguageSwitch locale={locale} page={page} />
-          <a className="button button-small button-dark header-cta" href={whatsappUrl(locale)} target="_blank" rel="noopener noreferrer">{ui.sendCase}<span aria-hidden="true">↗</span></a>
+          <Link className="button button-small button-dark header-cta" href={routes[locale].sendCase}>{ui.sendCase}<span aria-hidden="true">↗</span></Link>
         </div>
         <details className="mobile-menu">
           <summary>{ui.menu}<span aria-hidden="true" className="menu-bars"><i/><i/></span></summary>
           <nav aria-label={locale === "ar" ? "قائمة الهاتف" : "Mobile navigation"}>
             {nav[locale].map(item => <Link key={item.key} href={routes[locale][item.key]} aria-current={page === item.key ? "page" : undefined}>{item.label}</Link>)}
             <LanguageSwitch locale={locale} page={page} />
-            <a className="button button-dark" href={whatsappUrl(locale)} target="_blank" rel="noopener noreferrer">{ui.sendCase}<span aria-hidden="true">↗</span></a>
+            <Link className="button button-dark" href={routes[locale].sendCase}>{ui.sendCase}<span aria-hidden="true">↗</span></Link>
           </nav>
         </details>
       </div>

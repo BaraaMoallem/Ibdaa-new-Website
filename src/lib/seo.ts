@@ -3,12 +3,14 @@ import { absoluteUrl, business, routes, siteOrigin, type Locale, type PageKey } 
 
 const pageMeta: Record<Locale, Record<PageKey, { title: string; description: string }>> = {
   en: {
+    sendCase: { title: "Send a Dental Case | IBDAA Dental Lab", description: "Submit a digital dental prescription to IBDAA Dental Lab. Select FDI teeth, restoration type and shade, then review your case details before sending." },
     home: { title: "IBDAA Dental Lab | CAD/CAM Dental Lab in Nasr City, Cairo", description: "IBDAA Dental Lab serves dentists in Cairo and Assiut with quality-focused Zirconia, Zircomax, E.max, Veneers and PFM restorations. CAD/CAM workflow in Nasr City." },
     about: { title: "About IBDAA Dental Lab | Founded by DT Yasser Zaineh", description: "Meet IBDAA Dental Lab, founded in 2016 by Damascus University graduate DT Yasser Zaineh. Serving dentists from Nasr City, Cairo with over 30 years of founder experience." },
     restorations: { title: "Dental Restorations in Cairo | IBDAA Dental Lab", description: "Explore Zirconia, Zircomax, E.max, Veneers and PFM restorations from IBDAA Dental Lab. CAD/CAM capability for dentists in Cairo and Assiut." },
     contact: { title: "Contact & Send a Case | IBDAA Dental Lab Cairo", description: "Send a dental case or contact IBDAA Dental Lab in Nasr City, Cairo by WhatsApp, phone or email. Serving dentists in Cairo and Assiut, with shipping to Port Said." },
   },
   ar: {
+    sendCase: { title: "أرسل حالة | IBDAA Dental Lab — مختبر إبداع للأسنان", description: "أرسل وصفة حالة إلى مختبر إبداع للأسنان. حدد الأسنان بنظام FDI ونوع التركيبة ودرجة اللون، ثم راجع التفاصيل قبل الإرسال." },
     home: { title: "مختبر إبداع للأسنان | تركيبات سنية و CAD/CAM في مدينة نصر", description: "مختبر إبداع للأسنان في مدينة نصر بالقاهرة يخدم أطباء الأسنان بتركيبات الزيركونيا وزيركوماكس وإي ماكس والقشور وPFM، مع تقنيات CAD/CAM." },
     about: { title: "عن مختبر إبداع للأسنان | خبرة DT Yasser Zaineh", description: "تعرّف على مختبر إبداع للأسنان الذي تأسس عام 2016 على يد فني الأسنان DT Yasser Zaineh، خريج جامعة دمشق وصاحب خبرة تزيد على 30 عاماً." },
     restorations: { title: "التركيبات السنية في القاهرة | مختبر إبداع للأسنان", description: "خيارات تركيبات الزيركونيا وزيركوماكس وإي ماكس والقشور التجميلية وPFM لأطباء الأسنان، مع استخدام CAD/CAM في مختبر إبداع بالقاهرة." },
@@ -75,7 +77,7 @@ export function structuredData(locale: Locale, page: PageKey) {
       "@type": "BreadcrumbList", "@id": `${url}#breadcrumbs`,
       itemListElement: [
         { "@type": "ListItem", position: 1, name: locale === "ar" ? "الرئيسية" : "Home", item: absoluteUrl(routes[locale].home) },
-        { "@type": "ListItem", position: 2, name: page === "about" ? (locale === "ar" ? "من نحن" : "About") : page === "restorations" ? (locale === "ar" ? "التركيبات السنية" : "Dental Restorations") : (locale === "ar" ? "تواصل معنا" : "Contact"), item: url },
+        { "@type": "ListItem", position: 2, name: page === "sendCase" ? (locale === "ar" ? "أرسل حالة" : "Send a Case") : page === "about" ? (locale === "ar" ? "من نحن" : "About") : page === "restorations" ? (locale === "ar" ? "التركيبات السنية" : "Dental Restorations") : (locale === "ar" ? "تواصل معنا" : "Contact"), item: url },
       ],
     });
   }

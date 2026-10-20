@@ -34,15 +34,13 @@ export function HomePage({ locale }: { locale: Locale }) {
             </h1>
             <p className="hero-intro">{copy.home.intro}</p>
             <div className="hero-actions">
-              <a
+              <Link
                 className="button button-accent"
-                href={whatsappUrl(locale)}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={routes[locale].sendCase}
               >
                 {copy.ui.sendCase}
                 <span aria-hidden="true">↗</span>
-              </a>
+              </Link>
               <Link
                 className="button button-outline"
                 href={routes[locale].restorations}
@@ -371,16 +369,14 @@ export function ContactPage({ locale }: { locale: Locale }) {
             </p>
             <h2>{copy.contact.caseTitle}</h2>
             <p>{copy.contact.caseBody}</p>
-            <a
+            <Link
               className="button button-accent"
-              href={whatsappUrl(locale)}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={routes[locale].sendCase}
             >
-              {copy.ui.sendCase}{" "}
-              {locale === "ar" ? "عبر واتساب" : "on WhatsApp"}
+              {copy.ui.sendCase}
               <span aria-hidden="true">↗</span>
-            </a>
+            </Link>
+            <p><a className="text-link" href={whatsappUrl(locale)} target="_blank" rel="noopener noreferrer">{copy.ui.whatsapp} ↗</a></p>
           </div>
           <div className="contact-details">
             <h2>{copy.contact.directTitle}</h2>

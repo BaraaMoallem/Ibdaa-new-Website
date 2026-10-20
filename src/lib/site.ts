@@ -1,5 +1,5 @@
 export type Locale = "en" | "ar";
-export type PageKey = "home" | "about" | "restorations" | "contact";
+export type PageKey = "home" | "about" | "restorations" | "contact" | "sendCase";
 
 export const business = {
   name: "IBDAA Dental Lab",
@@ -48,12 +48,14 @@ export const routes: Record<Locale, Record<PageKey, string>> = {
     about: "/about",
     restorations: "/restorations",
     contact: "/contact",
+    sendCase: "/send-case",
   },
   ar: {
     home: "/ar",
     about: "/ar/about",
     restorations: "/ar/restorations",
     contact: "/ar/contact",
+    sendCase: "/ar/send-case",
   },
 };
 
@@ -214,7 +216,7 @@ export const content = {
       lead: "We work with dentists and dental professionals. Reach IBDAA Dental Lab in Nasr City, Cairo to discuss restorations, case requirements, or shipping to Port Said.",
       caseTitle: "Send a Case",
       caseBody:
-        "Open a WhatsApp conversation with the lab and share the details you are ready to discuss.",
+        "Complete a digital prescription and review your case details before sending them to the lab.",
       directTitle: "Other ways to reach us",
       visitTitle: "Our location",
       visitBody: "Nasr City, Cairo. Use the map link for location details.",
@@ -360,7 +362,7 @@ export const content = {
       lead: "نتعامل مع أطباء الأسنان والمتخصصين. تواصل مع مختبر إبداع للأسنان في مدينة نصر بالقاهرة لمناقشة التركيبات ومتطلبات الحالات أو الشحن إلى بورسعيد.",
       caseTitle: "أرسل حالة",
       caseBody:
-        "افتح محادثة واتساب مع المختبر وشارك التفاصيل التي ترغب في مناقشتها.",
+        "أكمل وصفة الحالة إلكترونيًا وراجع التفاصيل قبل إرسالها إلى المختبر.",
       directTitle: "طرق أخرى للتواصل",
       visitTitle: "موقع المختبر",
       visitBody: "مدينة نصر، القاهرة. افتح رابط الخريطة لمعرفة تفاصيل الموقع.",

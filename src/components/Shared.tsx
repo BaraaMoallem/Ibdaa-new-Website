@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { content, routes, whatsappUrl, type Locale } from "@/lib/site";
+import { content, routes, type Locale } from "@/lib/site";
 
 export function SectionHeading({ eyebrow, title, intro, align = "left" }: { eyebrow: string; title: string; intro?: string; align?: "left" | "center" }) {
   return <div className={`section-heading ${align === "center" ? "section-heading-center" : ""}`}><p className="eyebrow">{eyebrow}</p><h2>{title}</h2>{intro && <p className="section-intro">{intro}</p>}</div>;
@@ -18,7 +18,7 @@ export function ImageArea({ src, alt, className = "", sizes, priority = false }:
 
 export function FinalCta({ locale }: { locale: Locale }) {
   const copy = content[locale];
-  return <section className="final-cta"><div className="container final-cta-inner"><div><p className="eyebrow">{copy.ui.contact}</p><h2>{copy.home.finalTitle}</h2><p>{copy.home.finalBody}</p></div><div className="final-cta-actions"><a className="button button-accent" href={whatsappUrl(locale)} target="_blank" rel="noopener noreferrer">{copy.ui.sendCase}<span aria-hidden="true">↗</span></a><Link className="text-link light-link" href={routes[locale].contact}>{copy.ui.contact}<span aria-hidden="true">↗</span></Link></div></div></section>;
+  return <section className="final-cta"><div className="container final-cta-inner"><div><p className="eyebrow">{copy.ui.contact}</p><h2>{copy.home.finalTitle}</h2><p>{copy.home.finalBody}</p></div><div className="final-cta-actions"><Link className="button button-accent" href={routes[locale].sendCase}>{copy.ui.sendCase}<span aria-hidden="true">↗</span></Link><Link className="text-link light-link" href={routes[locale].contact}>{copy.ui.contact}<span aria-hidden="true">↗</span></Link></div></div></section>;
 }
 
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
