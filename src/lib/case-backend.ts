@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
-import { validateCase } from "./case-validation";
+import { caseSchemaVersion, validateCase } from "./case-validation";
 
-const maxBytes = 20000;
+const maxBytes = 80000; // Bounded support for 32 independently configured teeth, including Arabic text.
 const attempts = new Map<string, { count: number; expires: number }>();
 function reply(body: Record<string, unknown>, status = 200) {
   return Response.json(body, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -49,13 +49,13 @@ export async function handleCaseSubmission(request: Request) {
     typeof body.requestId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(body.requestId) ||
     !["en", "ar"].includes(body.locale)) return reject("invalid", 400);
   const validation = validateCase(body.data);
-  if (!validation.valid) return reply({ ok: false, code: "invalid", errors: validation.errors, safeToEdit: true }, 422);
+  if (!validation.valid) return reply({ ok: false, code: "invalid", errors: validation.errors, toothErrors: validation.toothErrors, safeToEdit: true }, 422);
   const url = process.env.GOOGLE_CASE_SCRIPT_URL;
   const secret = process.env.GOOGLE_CASE_SHARED_SECRET;
   if (!url || !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url) || !secret || secret.length < 32) return reject("unavailable", 503);
   const phoneHash = createHmac("sha256", secret).update(validation.data.phone).digest("hex");
   if (!throttle(phoneHash)) return reject("rate", 429, false);
-  const payload = JSON.stringify({ requestId: body.requestId.toLowerCase(), locale: body.locale, data: validation.data });
+  const payload = JSON.stringify({ schemaVersion: caseSchemaVersion, requestId: body.requestId.toLowerCase(), locale: body.locale, data: validation.data });
   const sentAt = Date.now();
   const signature = createHmac("sha256", secret).update(`${sentAt}.${payload}`).digest("hex");
   try {

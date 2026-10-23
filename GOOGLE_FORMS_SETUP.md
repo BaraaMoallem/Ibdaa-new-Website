@@ -39,16 +39,51 @@ It refuses to run against a nonempty or already configured Form. If setup fails 
 
 ## 3. Review the required questions and Sheet
 
-The setup creates these exact question titles. They are **Short answer**, except “Special instructions”, which is **Paragraph**. Typed controls and dropdowns live on the website; both backends validate their values independently.
+The setup creates these exact question titles. They are **Short answer**, except “Special instructions”, “Tooth restoration summary” and “Tooth configurations JSON”, which are **Paragraph**. Typed controls and dropdowns live on the website; both backends validate their values independently.
 
 - Submission ID; Case reference; Submission timestamp (UTC); Language.
 - Dentist name; Clinic name; Phone number; Email.
 - Anonymized patient reference; Patient age; Patient sex.
-- Restoration type; Other material; Shade / color; Quantity.
+- Quantity (computed from configured teeth; no independent quantity input).
+- Tooth restoration summary; Tooth configurations JSON.
 - Requested next step; Special instructions; Selected teeth (FDI).
 - Privacy acknowledgment.
 
-Submission ID, reference, timestamp, language, dentist, phone, patient reference, restoration type, quantity, teeth, and acknowledgment are required. The other questions are optional.
+Submission ID, reference, timestamp, language, dentist, phone, patient reference, quantity, selected teeth, both structured restoration fields, and acknowledgment are required. The other questions are optional. The helper stores `FORM_SCHEMA_VERSION=2` in Script Properties.
+
+### Per-tooth storage and quantity
+
+Each selected tooth has its own material, optional custom material name, shade and notes. The Form stores the association together in **two dedicated fields**, never as unrelated material/shade lists:
+
+```text
+Tooth 11 — E.max — BL1
+Tooth 12 — E.max — BL1
+Tooth 21 — Zirconia — A1 — Notes: Instructions for tooth 21
+Tooth 22 — Veneers — B1
+```
+
+The JSON field contains the same canonical, numerically sorted records, for example:
+
+```json
+{"schemaVersion":2,"teeth":[{"toothNumber":"11","material":"emax","otherMaterial":"","shade":"BL1","notes":""},{"toothNumber":"21","material":"zirconia","otherMaterial":"","shade":"A1","notes":"Instructions for tooth 21"}]}
+```
+
+JSON preserves multiline notes exactly; the readable summary renders line breaks within a field as `↵` to keep one tooth per line. Both fields must appear as corresponding columns in the linked response Sheet. Material IDs are stable English identifiers, while the website labels are localized. A custom material uses `material: "other"` plus `otherMaterial`.
+
+The client never supplies an authoritative quantity. Apps Script derives `Quantity` from the validated array length. The v2 schema permits exactly one restoration record per permanent tooth; duplicate FDI numbers and old case-wide material/shade/quantity fields are rejected. Notes are limited to 300 characters per tooth, shades to 60, and custom material names to 120. Future multiple-unit or appliance workflows require an explicit schema extension and coordinated validation, UI and integration changes.
+
+### Upgrade an existing Google Form from the first implementation
+
+If you have already run the previous setup, **do not run `setupNewForm` again**:
+
+1. Temporarily pause online intake (for example, remove `GOOGLE_CASE_SCRIPT_URL` from the website environment and redeploy so it reports unavailable). Resolve any pending old submissions before changing the website/deployment, because v1 case-wide payloads are not accepted by v2. Keep the existing ledger and responses.
+2. Replace `Code.gs` with the updated source while retaining the existing `FORM_ID`, `SHEET_ID`, `ITEM_IDS` and `SHARED_SECRET` properties.
+3. Run **`upgradePerToothForm`** in the editor as the owner. It adds the two new Paragraph questions and mappings and sets `FORM_SCHEMA_VERSION` to `2`.
+4. The helper makes the old Restoration type, Other material and Shade / color questions optional. It leaves their historical responses and Sheet columns intact; new submissions do not fill these obsolete case-wide fields.
+5. Verify the new questions and linked Sheet columns, deploy a **new Apps Script version**, then deploy the updated website with the integration URL restored. Keep the Form response destination unchanged.
+6. Submit a synthetic mixed-material case and verify both new fields in the Form **and** linked Sheet before considering the upgrade complete.
+
+The helper can be rerun to finish an interrupted upgrade. It does not delete historical questions or responses. Do not manually rename/reorder ledger columns or overwrite `ITEM_IDS` with guessed IDs.
 
 In the Form's **Responses** tab, open the linked spreadsheet and confirm the response tab exists. The setup already links it. If linking manually, use **Responses → Link to Sheets**, select the intended spreadsheet, set `SHEET_ID`, and create the ledger headers exactly as specified in `LEDGER_HEADERS` in the script. Do not change item types or replace questions without updating `ITEM_IDS`.
 
@@ -98,7 +133,7 @@ The Node route allows 60 seconds and uses a 35-second upstream timeout. Ensure y
 ## 6. Security and retry behavior
 
 - The browser sends only to the same-origin API. No Google credentials or payloads are exposed in URLs.
-- The API enforces JSON, a streaming 20 KB body limit, exact origin, field limits, enum/range validation and consent. Production origin must be HTTPS.
+- The API enforces JSON, a streaming 80 KB body limit (supporting all 32 teeth including Arabic notes), exact origin, field limits, enum/range validation and consent. Production origin must be HTTPS.
 - Apps Script checks the HMAC, a five-minute freshness window, schema and all field rules independently. Signatures are in the JSON body because Apps Script's documented request event does not offer a general arbitrary-header authentication interface.
 - Both layers remove/reject control characters. React renders text without HTML injection. The integration prefixes formula-leading text before it reaches Forms/Sheets to reduce spreadsheet/CSV formula injection.
 - A per-process throttle rejects excessive API attempts. This is **not** a distributed edge limiter. The locked ledger additionally enforces 10 new cases per normalized contact number per 15 minutes and 200 globally per hour. Existing retries are checked before these Google-side limits.
@@ -119,11 +154,11 @@ An authorized operator should locate the reference in `_SubmissionLedger`, then 
 
 1. Run `npm.cmd install` if needed, then `npm.cmd run dev`.
 2. Open `/send-case`. Use a clearly synthetic reference such as `TEST-CL-1042`, test contact details controlled by IBDAA, no real patient information.
-3. Select teeth 11, 12, 21, 22; toggle one off/on; check the review summary.
-4. Try missing required fields, invalid age, zero quantity, no teeth, “Other” without material and an unchecked acknowledgment. All should be rejected with inline errors.
+3. Select teeth 11, 12, 21, 22. Select their rows, bulk-apply E.max and BL1, then individually change 21 to Zirconia/A1 and 22 to Veneers/B1. Add a note for tooth 21. Confirm other rows stay unchanged. Remove/reselect a tooth: its previous configuration must be gone. Quantity must match the current tooth count.
+4. Try missing required fields, invalid age, no teeth, a tooth without a material, “Other” without its custom material, and an unchecked acknowledgment. All should be rejected with inline errors. Test bulk editing with and without the shared-shade checkbox; a checked blank shade explicitly clears only selected rows' shades.
 5. Submit a valid test case. The button must disable while sending. A genuine successful result shows an `IBD-...` reference.
 6. In the **Google Form Responses** tab, verify an actual response with that reference and Submission ID.
-7. In the **linked response Sheet**, verify one new row, normalized contact, FDI list and timestamp. Confirm `_SubmissionLedger` has one matching `submitted` entry and Form response ID. Sheet synchronization can lag the Form.
+7. In the **linked response Sheet**, verify one new row, normalized contact, FDI list, derived quantity and timestamp. Check **Tooth restoration summary** and parse **Tooth configurations JSON**: tooth 11 must remain E.max/BL1, tooth 21 Zirconia/A1 with its own note, and tooth 22 Veneers/B1. Confirm `_SubmissionLedger` has one matching `submitted` entry and Form response ID. Sheet synchronization can lag the Form. Do not treat a test-double response as proof of this verification.
 8. In developer tools, replay the **same API POST body** from the same origin. Expect the same reference and no additional Form response/Sheet row. Change its data without changing the ID: expect rejection and no new response.
 9. Temporarily test an incorrect secret or deployment URL in staging. The UI must show failure, preserve the prescription, and never confirm receipt. Restore config and retry the same submission.
 10. Test Arabic `/ar/send-case`, phone/tablet/desktop, Tab/Space tooth selection, loading state, “Other” behavior, review/edit and contact reuse. Numeric chart orientation stays anatomical in both languages.
@@ -131,7 +166,9 @@ An authorized operator should locate the reference in `_SubmissionLedger`, then 
 
 `npm.cmd run test:cases` checks validation, backend rejection/confirmation logic, and the Apps Script's signed submission, recovery and duplicate behavior using local test doubles. **Those tests are not evidence of a working Google deployment.** Only steps 5–7 above establish live end-to-end success.
 
-For repeatable browser checks, run a dedicated headless Chrome with remote debugging on port 9222 and an isolated profile, then `node tests/browser-cases.mjs` while the app runs on port 3000. It checks both languages at 390, 768 and 1440 px, keyboard tooth selection, validation and submission UI states. It intercepts API requests with explicit test doubles and saves screenshots under ignored `.qa/`. Never expose the Chrome debugging port publicly.
+For repeatable browser checks, run a dedicated headless Chrome with remote debugging on port 9222 and an isolated profile, then `node tests/browser-cases.mjs` while the app runs on port 3000. It checks both languages at 390, 768 and 1440 px, keyboard tooth selection, independent tooth edits, bulk editing, required custom materials, removal/reselection, review associations and submission UI states. It intercepts API requests with explicit test doubles and saves screenshots under ignored `.qa/`. Never expose the Chrome debugging port publicly.
+
+If port 3000 is in use, start Next.js on a free port and set `CASE_TEST_ORIGIN` to that local origin when running the browser checks.
 
 ## 8. Privacy and operations before production
 

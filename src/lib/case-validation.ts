@@ -3,17 +3,36 @@ export const caseMaterials = ["zirconia", "zircomax", "emax", "veneers", "pfm", 
 // Add only laboratory-approved steps, with matching IDs in Apps Script NEXT_STEPS.
 export const requestedNextSteps: { id: string; en: string; ar: string }[] = [];
 export const permanentTeeth = [1, 2, 3, 4].flatMap(q => Array.from({ length: 8 }, (_, i) => q * 10 + i + 1));
-export const textLimits = { dentist: 100, clinic: 120, phone: 32, email: 254, patientReference: 80, otherMaterial: 120, shade: 60, instructions: 2000 } as const;
+export const textLimits = { dentist: 100, clinic: 120, phone: 32, email: 254, patientReference: 80, instructions: 2000 } as const;
+export const toothTextLimits = { otherMaterial: 120, shade: 60, notes: 300 } as const;
+// Version 2 has one restoration unit per tooth. Future multi-unit/appliance workflows
+// should use a versioned schema extension rather than a contradictory case quantity.
+export const caseSchemaVersion = 2;
+export type ToothRestoration = { toothNumber: string; material: string; otherMaterial: string; shade: string; notes: string };
+export function newTooth(toothNumber: string): ToothRestoration {
+  return { toothNumber, material: "", otherMaterial: "", shade: "", notes: "" };
+}
+export function reconcileTeeth(current: ToothRestoration[], selected: number[]) {
+  return [...selected].sort((a, b) => a - b).map(number => current.find(t => t.toothNumber === String(number)) ?? newTooth(String(number)));
+}
+export const restorationQuantity = (teeth: ToothRestoration[]) => teeth.length;
+export function applyToothDefaults(teeth: ToothRestoration[], selected: string[], material: string, otherMaterial: string, shade?: string) {
+  return teeth.map(tooth => selected.includes(tooth.toothNumber) ? {
+    ...tooth, material, otherMaterial: material === "other" ? otherMaterial : "",
+    ...(shade !== undefined ? { shade } : {}),
+  } : tooth);
+}
 export type CaseData = {
   dentist: string; clinic: string; phone: string; email: string;
   patientReference: string; age: string; sex: string;
-  restoration: string; otherMaterial: string; shade: string; quantity: string;
-  nextStep: string; instructions: string; teeth: number[]; acknowledged: boolean;
+  nextStep: string; instructions: string; teeth: ToothRestoration[]; acknowledged: boolean;
 };
-export type CaseErrors = Partial<Record<keyof CaseData, "required" | "length" | "phone" | "email" | "age" | "quantity" | "choice" | "teeth" | "acknowledged">>;
+export type ErrorCode = "required" | "length" | "phone" | "email" | "age" | "choice" | "teeth" | "configuration" | "acknowledged";
+export type CaseErrors = Partial<Record<keyof CaseData, ErrorCode>>;
+export type ToothErrors = Record<string, Partial<Record<"material" | keyof typeof toothTextLimits, ErrorCode>>>;
 export const emptyCase: CaseData = {
   dentist: "", clinic: "", phone: "", email: "", patientReference: "", age: "", sex: "",
-  restoration: "", otherMaterial: "", shade: "", quantity: "1", nextStep: "",
+  nextStep: "",
   instructions: "", teeth: [], acknowledged: false,
 };
 export function latinDigits(value: string) {
@@ -29,10 +48,11 @@ export function normalizePhone(value: string) {
   if (/^01[0125]\d{8}$/.test(phone)) phone = `+20${phone.slice(1)}`;
   return phone;
 }
-export function validateCase(input: unknown): { data: CaseData; errors: CaseErrors; valid: boolean } {
+export function validateCase(input: unknown): { data: CaseData; errors: CaseErrors; toothErrors: ToothErrors; valid: boolean } {
   const raw = input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : {};
   const data: CaseData = { ...emptyCase, teeth: [] };
   const errors: CaseErrors = {};
+  const toothErrors: ToothErrors = {};
   for (const [key, limit] of Object.entries(textLimits)) {
     const field = key as keyof typeof textLimits;
     if (raw[field] !== undefined && typeof raw[field] !== "string") errors[field] = "choice";
@@ -40,7 +60,7 @@ export function validateCase(input: unknown): { data: CaseData; errors: CaseErro
     if (value.length > limit) errors[field] = "length";
     data[field] = cleanText(value);
   }
-  for (const key of ["age", "sex", "restoration", "quantity", "nextStep"] as const) {
+  for (const key of ["age", "sex", "nextStep"] as const) {
     if (typeof raw[key] !== "string" || raw[key].length > 80) errors[key] = "choice";
     data[key] = typeof raw[key] === "string" ? cleanText(raw[key]) : "";
   }
@@ -54,17 +74,37 @@ export function validateCase(input: unknown): { data: CaseData; errors: CaseErro
   data.age = latinDigits(data.age);
   if (data.age && (!/^\d{1,3}$/.test(data.age) || Number(data.age) > 120)) errors.age = "age";
   if (!["", "male", "female", "unspecified"].includes(data.sex)) errors.sex = "choice";
-  if (!(caseMaterials as readonly string[]).includes(data.restoration)) errors.restoration = "required";
-  if (data.restoration === "other" && !data.otherMaterial) errors.otherMaterial = "required";
-  if (data.restoration !== "other") data.otherMaterial = "";
-  data.quantity = latinDigits(data.quantity);
-  if (!/^\d{1,3}$/.test(data.quantity) || Number(data.quantity) < 1 || Number(data.quantity) > 999) errors.quantity = "quantity";
   if (data.nextStep && !requestedNextSteps.some(step => step.id === data.nextStep)) errors.nextStep = "choice";
-  if (!Array.isArray(raw.teeth) || raw.teeth.length < 1 || raw.teeth.length > 32 ||
-    raw.teeth.some(t => typeof t !== "number" || !permanentTeeth.includes(t)) ||
-    new Set(raw.teeth).size !== raw.teeth.length) errors.teeth = "teeth";
-  else data.teeth = [...raw.teeth].sort((a, b) => a - b);
+  const seen = new Set<string>();
+  if (!Array.isArray(raw.teeth) || raw.teeth.length < 1 || raw.teeth.length > 32) errors.teeth = "teeth";
+  else for (const rawTooth of raw.teeth) {
+    if (!rawTooth || typeof rawTooth !== "object" || Array.isArray(rawTooth) ||
+      typeof rawTooth.toothNumber !== "string" || !/^[1-4][1-8]$/.test(rawTooth.toothNumber) || seen.has(rawTooth.toothNumber)) {
+      errors.teeth = "teeth"; continue;
+    }
+    seen.add(rawTooth.toothNumber);
+    const tooth = newTooth(rawTooth.toothNumber);
+    const rowErrors: ToothErrors[string] = {};
+    if (typeof rawTooth.material !== "string" || !(caseMaterials as readonly string[]).includes(rawTooth.material)) rowErrors.material = "required";
+    else tooth.material = rawTooth.material;
+    for (const [key, limit] of Object.entries(toothTextLimits)) {
+      const field = key as keyof typeof toothTextLimits;
+      const value = rawTooth[field] === undefined ? "" : rawTooth[field];
+      if (typeof value !== "string") rowErrors[field] = "choice";
+      else {
+        if (value.length > limit) rowErrors[field] = "length";
+        tooth[field] = cleanText(value);
+      }
+    }
+    if (tooth.material === "other" && !tooth.otherMaterial) rowErrors.otherMaterial = "required";
+    if (tooth.material !== "other") tooth.otherMaterial = "";
+    if (Object.keys(rowErrors).length) { toothErrors[tooth.toothNumber] = rowErrors; errors.teeth ||= "configuration"; }
+    data.teeth.push(tooth);
+  }
+  data.teeth.sort((a, b) => Number(a.toothNumber) - Number(b.toothNumber));
+  // Reject obsolete case-wide values rather than silently discarding contradictory prescriptions.
+  if (["restoration", "otherMaterial", "shade", "quantity"].some(key => key in raw)) errors.teeth = "configuration";
   data.acknowledged = raw.acknowledged === true;
   if (!data.acknowledged) errors.acknowledged = "acknowledged";
-  return { data, errors, valid: Object.keys(errors).length === 0 };
+  return { data, errors, toothErrors, valid: Object.keys(errors).length === 0 };
 }
