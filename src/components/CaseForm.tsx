@@ -19,6 +19,7 @@ export function CaseForm({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const [reference, setReference] = useState("");
+  const [submittedAt, setSubmittedAt] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const requestId = useRef("");
   const inFlight = useRef(false);
@@ -52,7 +53,9 @@ export function CaseForm({ locale }: { locale: Locale }) {
       });
       const result = await response.json();
       if (response.ok && result.ok === true && /^IBD-\d{8}-[a-f0-9]{32}$/.test(result.reference)) {
-        setReference(result.reference); setStep("success"); setUncertain(false); focusHeading();
+        setReference(result.reference);
+        setSubmittedAt(new Date().toLocaleString(locale === "ar" ? "ar-EG" : "en-US", { dateStyle: "medium", timeStyle: "short" }));
+        setStep("success"); setUncertain(false); focusHeading();
       } else {
         // Only explicit pre-submission rejections allow editing. Unknown outcomes must retain the same key.
         if (result.safeToEdit === true) setUncertain(false);
@@ -64,7 +67,7 @@ export function CaseForm({ locale }: { locale: Locale }) {
   }
   function another() {
     setData({ ...emptyCase, dentist: data.dentist, clinic: data.clinic, phone: data.phone, email: data.email, teeth: [] });
-    setErrors({}); setToothErrors({}); setSelectedRows([]); setFailure(""); setReference(""); requestId.current = ""; setUncertain(false); setStep("edit"); focusHeading();
+    setErrors({}); setToothErrors({}); setSelectedRows([]); setFailure(""); setReference(""); setSubmittedAt(""); requestId.current = ""; setUncertain(false); setStep("edit"); focusHeading();
   }
   function field(key: keyof typeof textLimits | "age", options: { type?: string; required?: boolean; hint?: string; autoComplete?: string; wide?: boolean } = {}) {
     const error = errors[key];
@@ -102,11 +105,54 @@ export function CaseForm({ locale }: { locale: Locale }) {
       {copy.steps.map((label, index) => <li key={label} aria-current={index === (step === "edit" ? 0 : step === "review" ? 1 : 2) ? "step" : undefined}><span>{index + 1}</span>{label}</li>)}
     </ol>
     {step === "success" ? <div className="case-confirmation">
-      <span className="case-success-icon" aria-hidden="true">✓</span>
-      <h2 tabIndex={-1} ref={heading}>{copy.received}</h2><p>{copy.successBody}</p>
-      <div className="case-reference">{copy.reference}<strong dir="ltr">{reference}</strong></div>
-      <div className="case-actions"><Link href={routes[locale].home} className="button button-accent">{copy.home}</Link><button type="button" className="button button-outline" onClick={another}>{copy.another}</button></div>
-      <p className="case-hint">{copy.reuse}</p>
+      <div className="case-confirmation-banner no-print">
+        <span className="case-success-icon" aria-hidden="true">✓</span>
+        <h2 tabIndex={-1} ref={heading}>{copy.received}</h2>
+        <p>{copy.successBody}</p>
+      </div>
+
+      <div className="case-receipt" id="case-receipt">
+        <div className="case-receipt-header">
+          <div>
+            <h3 className="case-receipt-lab">{locale === "ar" ? "مختبر إبداع للأسنان" : "IBDAA Dental Lab"}</h3>
+            <p className="case-receipt-title">{copy.receiptTitle}</p>
+          </div>
+          <div className="case-receipt-meta">
+            <div><span className="case-receipt-label">{copy.reference}:</span> <strong dir="ltr">{reference}</strong></div>
+            {submittedAt && <div><span className="case-receipt-label">{copy.submittedOn}:</span> <time>{submittedAt}</time></div>}
+          </div>
+        </div>
+
+        <div className="case-receipt-body">
+          <dl className="case-summary">
+            {summary.map(([key, value]) => {
+              let display = String(value);
+              if (key === "sex") display = copy.sex[["male", "female", "unspecified"].indexOf(data.sex)];
+              if (key === "nextStep") display = requestedNextSteps.find(s => s.id === value)?.[locale] || display;
+              return <div key={key}><dt>{copy.labels[key as keyof typeof copy.labels]}</dt><dd dir="auto">{display}</dd></div>;
+            })}
+          </dl>
+          <ToothReview locale={locale} teeth={data.teeth} />
+        </div>
+
+        <div className="case-receipt-footer">
+          <p>{locale === "ar" ? "مختبر إبداع للأسنان · هاتف: 201030277027+ · damas.ibdaa@gmail.com" : "IBDAA Dental Lab · Tel: +20 103 027 7027 · damas.ibdaa@gmail.com"}</p>
+        </div>
+      </div>
+
+      <div className="case-actions no-print">
+        <button type="button" className="button button-accent case-print-button" onClick={() => window.print()}>
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: 8, verticalAlign: "middle" }}>
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+          {copy.print}
+        </button>
+        <button type="button" className="button button-outline" onClick={another}>{copy.another}</button>
+        <Link href={routes[locale].home} className="button button-outline">{copy.home}</Link>
+      </div>
+      <p className="case-hint no-print">{copy.reuse}</p>
     </div> : step === "review" ? <div className="case-review" aria-busy={busy}>
       <h2 tabIndex={-1} ref={heading}>{copy.reviewTitle}</h2><p>{copy.reviewBody}</p>
       <dl className="case-summary">{summary.map(([key, value]) => {

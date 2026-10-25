@@ -35,12 +35,42 @@ async function readBody(request: Request) {
 }
 export async function handleCaseSubmission(request: Request) {
   const configuredOrigin = process.env.CASE_ALLOWED_ORIGIN;
-  let origin: string;
+  const originHeader = request.headers.get("origin");
+  let requestOrigin = "";
   try {
-    origin = configuredOrigin ? new URL(configuredOrigin).origin : new URL(request.url).origin;
-    if (process.env.NODE_ENV === "production" && (!configuredOrigin || !origin.startsWith("https://"))) return reject("unavailable", 503);
-  } catch { return reject("unavailable", 503); }
-  if (request.headers.get("origin") !== origin) return reject("origin", 403);
+    requestOrigin = new URL(request.url).origin;
+  } catch {
+    // If request.url cannot be parsed, fallback
+  }
+
+  // Parse allowed origins: support comma-separated list if provided
+  const allowedOrigins = new Set<string>();
+  if (configuredOrigin) {
+    for (const item of configuredOrigin.split(",")) {
+      try {
+        const parsed = new URL(item.trim()).origin;
+        allowedOrigins.add(parsed);
+      } catch {
+        // Ignore malformed entries
+      }
+    }
+  }
+
+  // Automatically allow genuine same-origin requests (e.g. custom domains, Vercel preview/production URLs)
+  if (requestOrigin) {
+    allowedOrigins.add(requestOrigin);
+  }
+
+  // In production, require HTTPS
+  if (process.env.NODE_ENV === "production") {
+    if (!originHeader || !originHeader.startsWith("https://")) {
+      return reject("unavailable", 503);
+    }
+  }
+
+  if (!originHeader || !allowedOrigins.has(originHeader)) {
+    return reject("origin", 403);
+  }
   if (request.headers.get("content-type")?.split(";")[0].trim() !== "application/json") return reject("invalid", 415);
   if (Number(request.headers.get("content-length") || 0) > maxBytes) return reject("invalid", 413);
   let body;

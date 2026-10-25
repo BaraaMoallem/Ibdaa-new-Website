@@ -122,3 +122,162 @@
   .case-actions .button { width: 100%; justify-content: center; }
   .case-summary > div { grid-template-columns: 1fr; gap: 6px; }
 }
+
+/* Receipt Display */
+.case-receipt {
+  margin: 32px 0;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  border-radius: 6px;
+  padding: clamp(20px, 4vw, 36px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.case-receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--navy);
+  margin-bottom: 24px;
+}
+.case-receipt-lab {
+  color: var(--navy);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.case-receipt-title {
+  color: var(--teal-text);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+.case-receipt-meta {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.case-receipt-meta strong {
+  color: var(--navy);
+  font-size: 14px;
+}
+.case-receipt-footer {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.case-print-button {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Print Optimization */
+@media print {
+  /* Hide all website chrome and navigation */
+  header, footer, nav, .site-header, .site-footer, .case-progress, .case-actions, .case-help, .case-hint, .no-print, .case-success-icon {
+    display: none !important;
+  }
+
+  body, html, .case-area {
+    background: #ffffff !important;
+    color: #111111 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .case-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .case-confirmation {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .case-receipt {
+    border: 1px solid #111111 !important;
+    box-shadow: none !important;
+    padding: 24px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .case-receipt-header {
+    border-bottom: 2px solid #111111 !important;
+  }
+
+  .case-receipt-lab {
+    color: #000000 !important;
+    font-size: 20pt !important;
+  }
+
+  .case-receipt-title {
+    color: #444444 !important;
+    font-size: 12pt !important;
+  }
+
+  .case-receipt-meta strong {
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+
+  .case-summary > div {
+    border-bottom: 1px solid #e0e0e0 !important;
+    padding: 6px 0 !important;
+  }
+
+  .tooth-review-table {
+    display: table !important;
+    width: 100% !important;
+  }
+
+  .tooth-review-table thead {
+    display: table-header-group !important;
+  }
+
+  .tooth-review-table thead th {
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color: #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+  }
+
+  .tooth-review-table tr {
+    display: table-row !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .tooth-review-table th, .tooth-review-table td {
+    display: table-cell !important;
+    border-bottom: 1px solid #cccccc !important;
+    padding: 8px 6px !important;
+    color: #111111 !important;
+  }
+
+  .tooth-total {
+    background: #f8f8f8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border: 1px solid #cccccc !important;
+  }
+
+  .tooth-mobile-heading {
+    display: none !important;
+  }
+}
