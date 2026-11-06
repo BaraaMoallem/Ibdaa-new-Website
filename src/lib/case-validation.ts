@@ -3,12 +3,16 @@ export const caseMaterials = ["zirconia", "zircomax", "emax", "veneers", "pfm", 
 // Add only laboratory-approved steps, with matching IDs in Apps Script NEXT_STEPS.
 export const requestedNextSteps: { id: string; en: string; ar: string }[] = [];
 export const permanentTeeth = [1, 2, 3, 4].flatMap(q => Array.from({ length: 8 }, (_, i) => q * 10 + i + 1));
-export const textLimits = { dentist: 100, clinic: 120, phone: 32, email: 254, patientReference: 80, instructions: 2000 } as const;
+export const textLimits = { dentist: 100, clinic: 120, phone: 32, email: 254, patientReference: 80, instructions: 2000, externalLink: 500 } as const;
 export const toothTextLimits = { otherMaterial: 120, shade: 60, notes: 300 } as const;
-// Version 2 has one restoration unit per tooth. Future multi-unit/appliance workflows
-// should use a versioned schema extension rather than a contradictory case quantity.
-export const caseSchemaVersion = 2;
+export const maxTotalAttachmentBytes = 3.5 * 1024 * 1024; // 3.5 MB max direct base64 upload
+export const maxAttachmentCount = 5;
+
+// Version 2 has one restoration unit per tooth. Version 3 adds file attachments and Drive storage.
+export const caseSchemaVersion = 3;
 export type ToothRestoration = { toothNumber: string; material: string; otherMaterial: string; shade: string; notes: string };
+export type CaseAttachment = { name: string; mimeType: string; data: string; size: number };
+
 export function newTooth(toothNumber: string): ToothRestoration {
   return { toothNumber, material: "", otherMaterial: "", shade: "", notes: "" };
 }
@@ -25,15 +29,21 @@ export function applyToothDefaults(teeth: ToothRestoration[], selected: string[]
 export type CaseData = {
   dentist: string; clinic: string; phone: string; email: string;
   patientReference: string; age: string; sex: string;
-  nextStep: string; instructions: string; teeth: ToothRestoration[]; acknowledged: boolean;
+  nextStep: string; instructions: string; teeth: ToothRestoration[];
+  externalLink: string;
+  attachments: CaseAttachment[];
+  acknowledged: boolean;
 };
-export type ErrorCode = "required" | "length" | "phone" | "email" | "age" | "choice" | "teeth" | "configuration" | "acknowledged";
+export type ErrorCode = "required" | "length" | "phone" | "email" | "age" | "choice" | "teeth" | "configuration" | "attachments" | "externalLink" | "acknowledged";
 export type CaseErrors = Partial<Record<keyof CaseData, ErrorCode>>;
 export type ToothErrors = Record<string, Partial<Record<"material" | keyof typeof toothTextLimits, ErrorCode>>>;
 export const emptyCase: CaseData = {
   dentist: "", clinic: "", phone: "", email: "", patientReference: "", age: "", sex: "",
   nextStep: "",
-  instructions: "", teeth: [], acknowledged: false,
+  instructions: "", teeth: [],
+  externalLink: "",
+  attachments: [],
+  acknowledged: false,
 };
 export function latinDigits(value: string) {
   return value.replace(/[٠-٩۰-۹]/g, digit => String(digit.charCodeAt(0) - (digit >= "۰" ? 1776 : 1632)));
@@ -41,6 +51,9 @@ export function latinDigits(value: string) {
 export function cleanText(value: string) {
   // Keep ordinary punctuation and multiline instructions; remove control and bidi override characters.
   return value.normalize("NFC").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").trim();
+}
+export function sanitizeFilename(name: string) {
+  return cleanText(name).replace(/[/\\]/g, "_").slice(0, 150);
 }
 export function normalizePhone(value: string) {
   let phone = latinDigits(value).replace(/[\s().-]/g, "");
@@ -50,7 +63,7 @@ export function normalizePhone(value: string) {
 }
 export function validateCase(input: unknown): { data: CaseData; errors: CaseErrors; toothErrors: ToothErrors; valid: boolean } {
   const raw = input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : {};
-  const data: CaseData = { ...emptyCase, teeth: [] };
+  const data: CaseData = { ...emptyCase, teeth: [], attachments: [] };
   const errors: CaseErrors = {};
   const toothErrors: ToothErrors = {};
   for (const [key, limit] of Object.entries(textLimits)) {
@@ -102,6 +115,46 @@ export function validateCase(input: unknown): { data: CaseData; errors: CaseErro
     data.teeth.push(tooth);
   }
   data.teeth.sort((a, b) => Number(a.toothNumber) - Number(b.toothNumber));
+
+  // Validate externalLink
+  if (data.externalLink) {
+    if (!/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(data.externalLink)) {
+      errors.externalLink = "choice";
+    }
+  }
+
+  // Validate attachments
+  if (raw.attachments !== undefined) {
+    if (!Array.isArray(raw.attachments)) {
+      errors.attachments = "choice";
+    } else if (raw.attachments.length > maxAttachmentCount) {
+      errors.attachments = "length";
+    } else {
+      let totalBytes = 0;
+      for (const item of raw.attachments) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          errors.attachments = "choice";
+          break;
+        }
+        const rawAtt = item as Record<string, unknown>;
+        const name = typeof rawAtt.name === "string" ? sanitizeFilename(rawAtt.name) : "";
+        const mimeType = typeof rawAtt.mimeType === "string" ? cleanText(rawAtt.mimeType).slice(0, 100) : "application/octet-stream";
+        const dataStr = typeof rawAtt.data === "string" ? rawAtt.data : "";
+        const size = typeof rawAtt.size === "number" && Number.isSafeInteger(rawAtt.size) && rawAtt.size > 0 ? rawAtt.size : 0;
+        if (!name || !dataStr || size <= 0) {
+          errors.attachments = "choice";
+          break;
+        }
+        totalBytes += size;
+        if (totalBytes > maxTotalAttachmentBytes) {
+          errors.attachments = "length";
+          break;
+        }
+        data.attachments.push({ name, mimeType, data: dataStr, size });
+      }
+    }
+  }
+
   // Reject obsolete case-wide values rather than silently discarding contradictory prescriptions.
   if (["restoration", "otherMaterial", "shade", "quantity"].some(key => key in raw)) errors.teeth = "configuration";
   data.acknowledged = raw.acknowledged === true;

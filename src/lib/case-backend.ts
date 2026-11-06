@@ -1,7 +1,8 @@
 import { createHmac } from "node:crypto";
 import { caseSchemaVersion, validateCase } from "./case-validation";
 
-const maxBytes = 80000; // Bounded support for 32 independently configured teeth, including Arabic text.
+// Allow up to 5 MB body to support base64 encoded scan files, photos and PDFs.
+const maxBytes = 5 * 1024 * 1024;
 const attempts = new Map<string, { count: number; expires: number }>();
 function reply(body: Record<string, unknown>, status = 200) {
   return Response.json(body, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -93,7 +94,7 @@ export async function handleCaseSubmission(request: Request) {
       method: "POST", redirect: "follow", cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ version: 1, sentAt, payload, signature }),
-      signal: AbortSignal.timeout(35000),
+      signal: AbortSignal.timeout(50000),
     });
     if (!upstream.ok) return reject("integration", 502, false);
     const result = await upstream.json();

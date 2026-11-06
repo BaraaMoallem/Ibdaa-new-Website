@@ -21,7 +21,7 @@ const { handleCaseSubmission } = modules["case-backend"];
 const sample = { ...emptyCase, dentist: "Test Dentist", phone: "01030277027", patientReference: "TEST-1042", teeth: [
   { ...newTooth("21"), material: "zirconia", shade: "A1", notes: "Keep this note with tooth 21" },
   { ...newTooth("11"), material: "emax", shade: "BL1", notes: "Keep this note with tooth 11" },
-], acknowledged: true };
+], attachments: [], externalLink: "", acknowledged: true };
 const secret = "test-only-secret-".repeat(4);
 
 test("validation: Arabic digits, Egyptian/international numbers and sorted FDI teeth", () => {
@@ -34,6 +34,7 @@ test("validation: Arabic digits, Egyptian/international numbers and sorted FDI t
   assert.equal(result.data.teeth[1].shade, "A1");
   assert.equal(validateCase({ ...sample, phone: "+44 (20) 7946 0958" }).valid, true);
 });
+
 test("validation: malformed, required, ranges, enums, consent and text limits", () => {
   assert.equal(validateCase(null).valid, false);
   for (const change of [
@@ -51,13 +52,21 @@ test("validation: malformed, required, ranges, enums, consent and text limits", 
     { teeth: [{ ...sample.teeth[0], notes: "a".repeat(301) }] },
     { teeth: [{ ...sample.teeth[0], notes: {} }] },
     { instructions: "a".repeat(2001) }, { dentist: 42 }, { nextStep: "unapproved" },
+    { externalLink: "javascript:alert(1)" },
+    { externalLink: "a".repeat(501) },
+    { attachments: "not-an-array" },
+    { attachments: [{}, {}, {}, {}, {}, {}] }, // > 5 files
+    { attachments: [{ name: "test.stl", mimeType: "application/sla", data: "base64", size: 4 * 1024 * 1024 }] }, // > 3.5 MB
     { acknowledged: "true" },
   ]) assert.equal(validateCase({ ...sample, ...change }).valid, false, JSON.stringify(change));
   assert.equal(validateCase({ ...sample, teeth: [{ ...newTooth("11"), material: "other", otherMaterial: "Discuss with lab" }] }).valid, true);
   assert.equal(validateCase({ ...sample, teeth: [{ toothNumber: "11", material: "emax" }] }).valid, true, "Optional tooth fields may be omitted and normalize to empty strings");
   assert.equal(validateCase({ ...sample, teeth: [newTooth("11")] }).toothErrors["11"].material, "required");
   assert.equal(validateCase({ ...sample, dentist: "  Test\u202e\u0000  " }).data.dentist, "Test");
+  assert.equal(validateCase({ ...sample, externalLink: "https://wetransfer.com/downloads/12345" }).valid, true);
+  assert.equal(validateCase({ ...sample, attachments: [{ name: "scan.stl", mimeType: "application/sla", data: "dGVzdA==", size: 1024 }] }).valid, true);
 });
+
 test("per-tooth edits and bulk defaults preserve other teeth, shades and notes; removal discards settings", () => {
   const original = structuredClone(sample.teeth);
   const edited = applyToothDefaults(original, ["11"], "veneers", "", undefined);
@@ -75,6 +84,7 @@ test("per-tooth edits and bulk defaults preserve other teeth, shades and notes; 
   assert.equal(restorationQuantity(removed), 1);
   assert.equal(restorationQuantity(readded), 2);
 });
+
 test("a fully configured 32-tooth Arabic prescription fits the bounded request", () => {
   const teeth = [1, 2, 3, 4].flatMap(q => Array.from({ length: 8 }, (_, i) => ({ ...newTooth(String(q * 10 + i + 1)), material: "other", otherMaterial: "م".repeat(120), shade: "ش".repeat(60), notes: "ن".repeat(300) })));
   const data = { ...sample, teeth, instructions: "ن".repeat(2000) };
@@ -88,6 +98,7 @@ function request(data = sample, overrides = {}) {
     body: JSON.stringify({ requestId: randomUUID(), locale: "en", data }), ...overrides,
   });
 }
+
 test("API: rejects unsafe requests, fails closed and requires a real-shaped confirmed receipt", async () => {
   const saved = { ...process.env }; const originalFetch = globalThis.fetch;
   try {
@@ -98,7 +109,7 @@ test("API: rejects unsafe requests, fails closed and requires a real-shaped conf
     assert.equal((await handleCaseSubmission(request(sample, { headers: { origin: "https://evil.example", "content-type": "application/json" } }))).status, 403);
     assert.equal((await handleCaseSubmission(request({ ...sample, teeth: [] }))).status, 422);
     assert.equal((await handleCaseSubmission(request(sample, { body: "{" }))).status, 400);
-    assert.equal((await handleCaseSubmission(request(sample, { body: "x".repeat(80001) }))).status, 400);
+    assert.equal((await handleCaseSubmission(request(sample, { body: "x".repeat(5 * 1024 * 1024 + 1) }))).status, 400);
     process.env.GOOGLE_CASE_SCRIPT_URL = "https://script.google.com/macros/s/test-deployment/exec";
     process.env.GOOGLE_CASE_SHARED_SECRET = secret;
     globalThis.fetch = async () => new Response("<html>Google login required</html>");
@@ -107,7 +118,7 @@ test("API: rejects unsafe requests, fails closed and requires a real-shaped conf
       const envelope = JSON.parse(options.body);
       assert.equal(envelope.signature, createHmac("sha256", secret).update(`${envelope.sentAt}.${envelope.payload}`).digest("hex"));
       const payload = JSON.parse(envelope.payload);
-      assert.equal(payload.schemaVersion, 2);
+      assert.equal([2, 3].includes(payload.schemaVersion), true);
       assert.equal(payload.data.teeth[0].toothNumber, "11");
       assert.equal(payload.data.teeth[0].material, "emax");
       assert.equal(payload.data.teeth[0].shade, "BL1");
@@ -126,7 +137,7 @@ test("API: rejects unsafe requests, fails closed and requires a real-shaped conf
   }
 });
 
-// Local Forms/Sheets doubles exercise algorithmic guarantees, NOT live Google connectivity.
+// Local Forms/Sheets/Drive doubles exercise algorithmic guarantees, NOT live Google connectivity.
 function googleHarness() {
   const rows = [["id", "hash", "state", "reference", "time", "responseId", "contactHash"]];
   const responses = [];
@@ -138,7 +149,7 @@ function googleHarness() {
   function item(id) {
     return {
       id,
-      getType: () => [ids.instructions, ids.toothSummary, ids.toothConfigurations].includes(id) ? "paragraph" : "text",
+      getType: () => [ids.instructions, ids.toothSummary, ids.toothConfigurations, ids.attachmentNames].includes(id) ? "paragraph" : "text",
       asParagraphTextItem: () => item(id), asTextItem: () => item(id),
       createResponse: value => ({ id, value }),
     };
@@ -159,16 +170,58 @@ function googleHarness() {
       return response;
     },
   };
-  const props = { SHARED_SECRET: secret, FORM_ID: "form", SHEET_ID: "sheet", ITEM_IDS: JSON.stringify(ids), FORM_SCHEMA_VERSION: "2" };
+
+  const createdFolders = [];
+  const createdFiles = [];
+  const drive = {
+    getFoldersByName: name => {
+      const found = createdFolders.filter(f => f.name === name);
+      let i = 0;
+      return { hasNext: () => i < found.length, next: () => found[i++] };
+    },
+    createFolder: name => {
+      const f = {
+        name,
+        getUrl: () => `https://drive.google.com/drive/folders/${name}`,
+        createFolder: subName => drive.createFolder(subName),
+        createFile: blob => {
+          const file = {
+            getName: () => (blob && blob.getName ? blob.getName() : "ticket.pdf"),
+            getUrl: () => `https://drive.google.com/file/d/${randomUUID()}`,
+          };
+          createdFiles.push(file);
+          return file;
+        },
+      };
+      createdFolders.push(f);
+      return f;
+    },
+  };
+
+  const props = { SHARED_SECRET: secret, FORM_ID: "form", SHEET_ID: "sheet", ITEM_IDS: JSON.stringify(ids), FORM_SCHEMA_VERSION: "3" };
   const context = vm.createContext({
     ContentService: { MimeType: { JSON: "json" }, createTextOutput: text => ({ setMimeType: () => JSON.parse(text) }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: key => props[key] }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => props[key], setProperty(k, v) { props[k] = v; }, setProperties(obj) { Object.assign(props, obj); } }) },
     Utilities: {
-      Charset: { UTF_8: "utf8" }, computeHmacSha256Signature: (text, key) => [...createHmac("sha256", key).update(text).digest()],
-      getUuid: randomUUID, formatDate: () => "20261020",
+      Charset: { UTF_8: "utf8" },
+      computeHmacSha256Signature: (text, key) => [...createHmac("sha256", key).update(text).digest()],
+      getUuid: randomUUID,
+      formatDate: () => "20261020",
+      base64Decode: str => Buffer.from(str, "base64"),
+      newBlob: (data, mimeType, name) => ({ data, mimeType, getName: () => name }),
     },
     LockService: { getScriptLock: () => ({ tryLock: () => true, hasLock: () => true, releaseLock() {} }) },
     FormApp: { openById: () => form, ItemType: { TEXT: "text", PARAGRAPH_TEXT: "paragraph" } },
+    DriveApp: drive,
+    HtmlService: {
+      createHtmlOutput: () => ({
+        getAs: () => ({
+          setName: name => ({
+            getName: () => name,
+          }),
+        }),
+      }),
+    },
     SpreadsheetApp: {
       flush() {}, openById: () => ({
         getId: () => "sheet",
@@ -182,15 +235,17 @@ function googleHarness() {
   });
   vm.runInContext(source, context);
   function envelope(requestId, data = validateCase(sample).data) {
-    const payload = JSON.stringify({ schemaVersion: 2, requestId, locale: "en", data });
+    const payload = JSON.stringify({ schemaVersion: 3, requestId, locale: "en", data });
     const sentAt = Date.now();
     return { version: 1, sentAt, payload, signature: createHmac("sha256", secret).update(`${sentAt}.${payload}`).digest("hex") };
   }
   return {
     post: e => context.doPost({ postData: { contents: JSON.stringify(e) } }), envelope, rows, responses, ids,
     failFinalize: value => { failFinalization = value; }, failSubmit: value => { failSubmit = value; },
+    createdFiles, createdFolders,
   };
 }
+
 test("Apps Script: rejects bad signatures and independently validates data", () => {
   const g = googleHarness();
   assert.equal(g.post({ ...g.envelope(randomUUID()), signature: "bad" }).code, "unauthorized");
@@ -201,6 +256,7 @@ test("Apps Script: rejects bad signatures and independently validates data", () 
   ]) assert.equal(g.post(g.envelope(randomUUID(), { ...validateCase(sample).data, teeth })).code, "invalid");
   assert.equal(g.rows.length, 1);
 });
+
 test("Apps Script: same key returns same receipt; changed data is rejected; no duplicate response", () => {
   const g = googleHarness(); const id = randomUUID(); const envelope = g.envelope(id);
   const first = g.post(envelope); const second = g.post(envelope);
@@ -212,6 +268,7 @@ test("Apps Script: same key returns same receipt; changed data is rejected; no d
   changed.teeth[0].shade = "A2";
   assert.equal(g.post(g.envelope(id, changed)).code, "conflict");
 });
+
 test("Apps Script: Form fields preserve mixed materials, shades and notes as summary AND JSON; quantity is derived", () => {
   const g = googleHarness();
   const data = validateCase(sample).data;
@@ -228,6 +285,28 @@ test("Apps Script: Form fields preserve mixed materials, shades and notes as sum
   assert.match(answer("toothSummary"), /Tooth 21 — Zirconia — A1 — Notes: Keep this note with tooth 21/);
   assert.match(answer("toothSummary"), /Tooth 12 — Other: Custom material — B1/);
 });
+
+test("Apps Script: saves attachments in Drive folder and generates printable PDF Job Ticket", () => {
+  const g = googleHarness();
+  const data = validateCase({
+    ...sample,
+    externalLink: "https://wetransfer.com/downloads/scan-pkg",
+    attachments: [
+      { name: "scan-upper.stl", mimeType: "application/sla", data: "dGVzdC1zdGwtZGF0YQ==", size: 100 },
+      { name: "shade-photo.jpg", mimeType: "image/jpeg", data: "dGVzdC1qcGctZGF0YQ==", size: 200 },
+    ],
+  }).data;
+  const res = g.post(g.envelope(randomUUID(), data));
+  assert.equal(res.ok, true);
+  assert.ok(res.folderUrl && res.folderUrl.includes("drive.google.com"));
+  assert.ok(res.pdfUrl && res.pdfUrl.includes("drive.google.com"));
+  const answer = key => g.responses[0].answers.find(a => a.id === g.ids[key]).value;
+  assert.match(answer("attachmentsFolder"), /drive\.google\.com/);
+  assert.match(answer("ticketPdf"), /drive\.google\.com/);
+  assert.match(answer("attachmentNames"), /scan-upper\.stl/);
+  assert.match(answer("externalLink"), /wetransfer\.com/);
+});
+
 test("Apps Script: recovers a Form write after ledger failure without resubmitting", () => {
   const g = googleHarness(); const envelope = g.envelope(randomUUID());
   g.failFinalize(true);
@@ -236,6 +315,7 @@ test("Apps Script: recovers a Form write after ledger failure without resubmitti
   assert.equal(g.post(envelope).ok, true);
   assert.equal(g.responses.length, 1);
 });
+
 test("Apps Script: uncertain write stays pending; durable contact limit blocks new cases", () => {
   const g = googleHarness(); const envelope = g.envelope(randomUUID());
   g.failSubmit(true); g.post(envelope); g.failSubmit(false);
